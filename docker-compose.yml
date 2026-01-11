@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   hicore:
     build: .
@@ -7,8 +5,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # 持久化数据库和工作目录
-      - ./database.db:/app/database.db
+      # 持久化数据库目录和工作目录
+      - ./databases:/app/databases
       - ./work:/app/work
     restart: unless-stopped
     environment:
