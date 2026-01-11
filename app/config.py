@@ -7,7 +7,8 @@ from pathlib import Path
 # 路径配置
 BASE_DIR = Path(__file__).parent.parent
 WORK_DIR = BASE_DIR / "work"
-DB_PATH = BASE_DIR / "database.db"
+DB_DIR = BASE_DIR / "databases"
+DB_PATH = DB_DIR / "database.db"
 
 # Poppler 路径
 if platform.system() == "Windows":

@@ -7,11 +7,14 @@ from contextlib import contextmanager
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-from app.config import DB_PATH
+from app.config import DB_PATH, DB_DIR
 
 
 def init_db():
     """初始化数据库表"""
+    # 确保数据库目录存在
+    DB_DIR.mkdir(parents=True, exist_ok=True)
+    
     with get_db() as conn:
         cursor = conn.cursor()
         
