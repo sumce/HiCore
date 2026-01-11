@@ -1,0 +1,5 @@
+{
+  "name": "Machine Data Collector",
+  "description": "A professional frontend for manual machine data collection, featuring real-time task management, WebSocket heartbeats, and high-efficiency split-screen data entry.",
+  "requestFramePermissions": []
+}
