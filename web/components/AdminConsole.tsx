@@ -72,6 +72,7 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({ onBack }) => {
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -91,6 +92,21 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({ onBack }) => {
       setStats(res || null);
     } catch (e: any) {
       setError(e.message);
+    }
+  };
+
+  const handleScan = async () => {
+    setScanning(true);
+    setError(null);
+    try {
+      const res = await api.adminRequest('/admin/scan', 'POST');
+      alert(res.msg || `扫描完成: ${res.data?.new_tasks || 0} 个新任务`);
+      loadStats();
+      if (tab === 'projects') loadProjects();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setScanning(false);
     }
   };
 
@@ -243,7 +259,17 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({ onBack }) => {
         {/* Overview */}
         {tab === 'overview' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">系统概览</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">系统概览</h2>
+              <Button 
+                onClick={handleScan} 
+                disabled={scanning}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <RefreshCw size={16} className={`mr-2 ${scanning ? 'animate-spin' : ''}`} />
+                {scanning ? '扫描中...' : '扫描新任务'}
+              </Button>
+            </div>
             
             {!stats ? (
               <div className="text-center text-gray-500 py-8">加载中...</div>

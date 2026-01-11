@@ -225,6 +225,33 @@ def upsert_task(project_id: str, machine_id: str, page_index: int):
         conn.commit()
 
 
+def get_existing_tasks() -> set:
+    """获取数据库中所有任务的key集合"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT project_id, machine_id, page_index FROM tasks")
+        return {(row[0], row[1], row[2]) for row in cursor.fetchall()}
+
+
+def remove_orphan_tasks(valid_tasks: set) -> int:
+    """删除不在valid_tasks中且未完成的孤立任务"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        # 获取所有未完成的任务
+        cursor.execute("SELECT id, project_id, machine_id, page_index FROM tasks WHERE status != 2")
+        orphans = []
+        for row in cursor.fetchall():
+            task_key = (row[1], row[2], row[3])
+            if task_key not in valid_tasks:
+                orphans.append(row[0])
+        
+        if orphans:
+            cursor.execute(f"DELETE FROM tasks WHERE id IN ({','.join('?' * len(orphans))})", orphans)
+            conn.commit()
+        
+        return len(orphans)
+
+
 def fetch_available_task(timeout_seconds: int = 10, project_id: str = None) -> Optional[Dict[str, Any]]:
     """获取可用任务（未处理或超时的僵尸任务）"""
     with get_db() as conn:

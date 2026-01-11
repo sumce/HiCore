@@ -6,14 +6,24 @@ from pathlib import Path
 from pdf2image import convert_from_path
 
 from app.config import WORK_DIR, POPPLER_PATH
-from app.database import upsert_task
+from app.database import upsert_task, get_existing_tasks, remove_orphan_tasks
 
 
-def scan_and_init_tasks():
-    """扫描 work 目录，初始化任务并转换 PDF（每页一个任务）"""
+def scan_and_init_tasks() -> dict:
+    """
+    扫描 work 目录，初始化任务并转换 PDF（每页一个任务）
+    返回扫描结果统计
+    """
+    result = {"scanned": 0, "new_tasks": 0, "projects": []}
+    
     if not WORK_DIR.exists():
         WORK_DIR.mkdir(parents=True)
-        return
+        print("[Scanner] work 目录为空，已创建")
+        return result
+    
+    # 获取数据库中已有的任务
+    existing_tasks = get_existing_tasks()
+    found_tasks = set()
     
     for project_dir in WORK_DIR.iterdir():
         if not project_dir.is_dir() or not project_dir.name.startswith("work_"):
@@ -26,15 +36,42 @@ def scan_and_init_tasks():
         if not pdf_dir.exists():
             continue
         
+        pdf_files = list(pdf_dir.glob("*.pdf"))
+        if not pdf_files:
+            continue
+            
         tmp_dir.mkdir(exist_ok=True)
+        project_tasks = 0
         
-        for pdf_file in pdf_dir.glob("*.pdf"):
+        for pdf_file in pdf_files:
             machine_id = pdf_file.stem
+            result["scanned"] += 1
+            
             images = convert_pdf_to_images(pdf_file, tmp_dir, machine_id)
-            # 每页创建一个任务
+            
             for page_index in range(len(images)):
-                upsert_task(project_id, machine_id, page_index)
-            print(f"[Scanner] 已注册任务: {project_id}/{machine_id}, 共 {len(images)} 页")
+                task_key = (project_id, machine_id, page_index)
+                found_tasks.add(task_key)
+                
+                # 只有新任务才插入
+                if task_key not in existing_tasks:
+                    upsert_task(project_id, machine_id, page_index)
+                    result["new_tasks"] += 1
+                    project_tasks += 1
+            
+            if images:
+                print(f"[Scanner] 已处理: {project_id}/{machine_id}, 共 {len(images)} 页")
+        
+        if project_tasks > 0 or pdf_files:
+            result["projects"].append(project_id)
+    
+    # 清理孤立任务（PDF已删除但数据库还有记录）
+    orphan_count = remove_orphan_tasks(found_tasks)
+    if orphan_count > 0:
+        print(f"[Scanner] 已清理 {orphan_count} 个孤立任务")
+    
+    print(f"[Scanner] 扫描完成: {result['scanned']} 个PDF, {result['new_tasks']} 个新任务")
+    return result
 
 
 def convert_pdf_to_images(pdf_path: Path, tmp_dir: Path, machine_id: str) -> list:

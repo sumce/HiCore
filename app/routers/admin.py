@@ -11,7 +11,7 @@ from app.database import (
     get_all_submissions, get_project_list, force_unlock_task,
     get_user_by_token, create_user, delete_user, update_user_password
 )
-from app.services.scanner import get_task_image
+from app.services.scanner import get_task_image, scan_and_init_tasks
 from app.dependencies import get_current_user
 
 router = APIRouter()
@@ -38,6 +38,17 @@ class UpdatePasswordRequest(BaseModel):
 async def stats(user: dict = Depends(require_admin)):
     """获取系统统计数据"""
     return {"code": 200, "data": get_stats()}
+
+
+@router.post("/scan")
+async def scan_projects(user: dict = Depends(require_admin)):
+    """手动扫描work目录，识别新PDF并创建任务"""
+    result = scan_and_init_tasks()
+    return {
+        "code": 200, 
+        "data": result,
+        "msg": f"扫描完成: {result['scanned']} 个PDF, {result['new_tasks']} 个新任务"
+    }
 
 
 @router.get("/users")
