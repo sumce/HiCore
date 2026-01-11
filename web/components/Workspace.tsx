@@ -473,7 +473,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({ updateContribution }) => {
 
         {/* 底部备案信息 */}
         <div className="text-center py-4 text-xs text-gray-400 relative z-10">
-          <p>© 2025 UNSIAO HiCore · 粤ICP备XXXXXXXX号-1</p>
+          <p>© 2025 UNSIAO HiCore · 豫ICP备2024055216号-3</p>
         </div>
       </div>
     );
