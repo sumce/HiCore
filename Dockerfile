@@ -44,6 +44,9 @@ RUN npm run build
 # 回到工作目录
 WORKDIR /app
 
+# 创建数据目录
+RUN mkdir -p /app/databases /app/work
+
 # 暴露端口
 EXPOSE 8000
 
